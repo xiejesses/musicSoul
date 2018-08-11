@@ -1,95 +1,157 @@
 <template>
-  <div class="container">
-    <div class="card-song">
-      <div class="img">
-        <!-- <img :src="music_res[0].artists.img1v1Url" alt=""> -->
-         <img src="http://p3.music.126.net/CKcTyKux_UTt0sO_5VWR9w==/16561943649388272.jpg" mode="aspectFill" alt="">
-      </div>
-      <div>{{ songName }}</div>
-      <div>{{ author }}</div>
+  <div>
+    <div class="top-search-form">
+      <a href="/pages/search/main" hover-class="none">
+        <div class="search-input">
+          <span class="search-icon">
+            <icon type="search" size="20" />
+          </span>
+          <div>
+            <span>搜索音乐</span>
+          </div>
+        </div>
+      </a>
     </div>
-    <!-- <p>{{res.name}}</p> -->
-    <button @click="play">play</button>
-    <button @click="pause">pause</button>
-    <!-- <button @click="getdata">获取数据</button> -->
+    <div class="top-navbar">
+      <block v-for="(item,index) in tabs" :key="index">
+        <div :id="index" :class="{'active-bar':activeIndex == index}" class="navbar-item" @click="tabClick">
+          <div class="weui-navbar__title">{{item}}</div>
+        </div>
+      </block>
+    </div>
+    <div>
+      <swiper :style="{ height: swiper_height + 'rpx' }" :current="activeIndex" duration="300" @change="switchTab" class="tab-content">
+        <swiper-item class="item">
+          <Album :key='listData.id' v-for='listData in listDatas' :album='listData'></Album>
+          <div class="load" id="load" v-if="listDatas.length">{{loadTips}}</div>
+        </swiper-item>
+        <swiper-item>
+          <div>
+            <span>个人中心</span>
+          </div>
+        </swiper-item>
+      </swiper>
+    </div>
+
   </div>
 </template>
-
 <script>
-import { get,post} from '../../utils/http'
-const myaudio = wx.createInnerAudioContext();
-export default {
-  data () {
-    return {
-      res:{},
-      music_res:[],
-      songName:' ',
-      author:' ',
-      test:'显示'
-    }
-  },
-
-  components: {
-
-  },
-
-  methods: {
-    play () {
-      myaudio.play();
-      console.log("点了播放");
+  import Album from '../../components/Album'
+  export default {
+    components: {
+      Album,
     },
-    pause () {
-      myaudio.pause();
+    data() {
+      return {
+        activeIndex: 0,
+        tabs: ['首页', '我的'],
+        windowHeight: 0,
+        baseItemHeight: 800,
+        swiper_height: 0,
+        loadTips: '上拉加载更多',
+        listDatas: [],
+      }
     },
-    async getdata () {
-      let music_res = await post('/musicSoul/search',{keywords:'有梦不难'})
-    this.music_res = music_res.result.songs;
-    this.songName = this.music_res[0].name
-    this.author = this.music_res[0].artists[0].name
-    console.log("歌名"+this.songName)
-    console.log("作者"+this.author)
+    methods: {
+      tabClick(e) {
+        console.log(e);
+        this.activeIndex = e.currentTarget.id;
+      },
+      switchTab(e) {
+        console.log(e)
+        // this.activeIndex = 1
+        this.activeIndex = e.target.current
+      },
+      getData() {
+        let _item = {
+          img: 'http://p3.music.126.net/hC-YGyr2cC0E_K_4Vfkztg==/109951163095172063.jpg',
+          albumname: '那年追过的王力宏',
+          describe: '从童年时代起就听王力宏的歌，他给了我太多的回忆',
+          creator: 'jesses'
+        }
+        wx.showLoading();
+        this.loadTips = '加载中...';
+        setTimeout(() => {
+          for (var i = 0; i < 5; i++) {
+            this.listDatas.push(_item);
+            this.listDatas[i].id = i;
+          }
+          this.loadTips = '上拉加载更多';
+          this.autoHeight()
+          wx.hideLoading();
+        }, 1000)
+
+      },
+      autoHeight() {
+        let num = this.listDatas.length;
+        this.swiper_height = this.baseItemHeight * num + 100;
+        console.log(this.swiper_height);
+      },
+    },
+    //   onPullDownRefresh () {
+    //     this.getList(true)
+    //     this.getTop()
+    //   },
+    onReachBottom() {
+      console.log("到底了");
+      this.getData();
+    },
+    mounted() {
+      this.getData()
+      // this.getList(true)
+      // this.getTop()
     }
-  },
-  mounted () {
-    // myaudio.src = "http://ws.stream.qqmusic.qq.com/M500001VfvsJ21xFqb.mp3?guid=ffffffff82def4af4b12b3cd9337d5e7&uin=346897220&vkey=6292F51E1E384E06DCBDC9AB7C49FD713D632D313AC4858BACB8DDD29067D3C601481D36E62053BF8DFEAF74C0A5CCFADD6471160CAF3E6A&fromtag=46";
-    myaudio.src = "http://music.163.com/song/media/outer/url?id=40147557.mp3";
-  },
-
-  async created () {
-    let music_res = await post('/musicSoul/search',{keywords:'有梦不难'})
-    this.music_res = music_res.result.songs;
-    this.songName = this.music_res[0].name
-    this.author = this.music_res[0].artists[0].name
-    console.log("歌名"+this.songName)
-    console.log("作者"+this.author)
-    // console.log(this.music_res)
-    console.log(await get('/musicSoul/demo'));
-    this.res = await get('/musicSoul/demo')
-    console.log("res:"+this.res.dd.name+this.res.dd.age)
-    
-
   }
-}
-</script>
 
+</script>
 <style scoped>
-.container {
-  display: flex;
-  justify-content: center;
-}
-.card-song {
-  width: 550rpx;
-  height: 850rpx;
-  /* border: 1px solid red; */
-  margin-top: 100rpx;
-}
-.img {
-  height: 550rpx;
-  width: 550rpx;
-   /* border: 1px solid green; */
-}
-.img img{
-  height: 550rpx;
-  width: 550rpx;
-}
+  .top-search-form a {
+    text-decoration: none;
+  }
+
+  .search-input {
+    width: 650rpx;
+    margin: 0 auto;
+    vertical-align: middle;
+    white-space: nowrap;
+    position: relative;
+  }
+
+  .search-input .search-icon icon {
+    position: absolute;
+    margin-left: 17px;
+    margin-top: 13px;
+  }
+
+
+  .search-input div {
+
+    color: rgb(156, 160, 163);
+    vertical-align: center;
+    padding-top: 10px;
+    padding-left: 45px;
+    background-color: #ddf0ed;
+    height: 35px;
+    border-radius: 5px;
+  }
+
+  .top-navbar {
+    display: flex;
+    justify-content: center;
+    margin-top: 20px;
+  }
+
+  .navbar-item {
+    margin: 0 100rpx 0 100rpx;
+  }
+
+  .active-bar {
+    padding-bottom: 10px;
+    border-bottom: 2px solid #ddf0ed;
+  }
+
+  .tab-content {
+    margin-top: 20px;
+  }
+
 </style>

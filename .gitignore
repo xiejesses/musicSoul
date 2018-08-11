@@ -5,6 +5,8 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 server/config.js
+src/test
+src/pages/test1
 
 # Editor directories and files
 .idea

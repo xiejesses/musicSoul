@@ -3,7 +3,7 @@
         <form name="search-form">
             <div class="search-input">
                 <span class="search-icon"><icon type="search" size="20"/></span>
-                <input type="text" placeholder="搜索音乐" v-model.trim="songName">
+                <input type="text" placeholder="搜索音乐" v-model.trim="songName" auto-focus>
                 <span  @click="clearInput" class="search-clear"><icon type="clear" size="20"/></span>
             </div>
         </form>
