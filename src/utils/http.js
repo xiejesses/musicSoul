@@ -20,10 +20,11 @@ function request (url, method, data, header = {}) {
         header,
         url: config.host + url,
         success: function (res) {
+          console.log(res.data)
           if (res.data.code === 0) {
             resolve(res.data.data)
           } else {
-            showModal('失败', res.data.data.msg)
+            // showModal('失败', res.data.data.msg)
             reject(res.data)
           }
         }
