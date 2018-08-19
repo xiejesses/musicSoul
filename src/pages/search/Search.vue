@@ -47,7 +47,7 @@ export default {
         songName() {
             delay(() => {
                 this.fetchData();
-            }, 1500)
+            }, 500)
         }
     },
     // computed: {

@@ -22,20 +22,21 @@
     <div>
       <swiper :style="{ height: swiper_height + 'rpx' }" :current="activeIndex" duration="300" @change="switchTab" class="tab-content">
         <swiper-item class="item">
-          <Album :key='listData.id' v-for='listData in listDatas' :album='listData'></Album>
-          <div class="load" id="load" v-if="listDatas.length">{{loadTips}}</div>
+          <Album :key='listData.id' v-for='listData in indexalbums' :album='listData'></Album>
+          <p class="text-footer" v-if='!more'>END</p>
+          <!-- <div class="load" id="load" v-if="listDatas.length">{{loadTips}}</div> -->
         </swiper-item>
         <swiper-item>
           <div v-if='userinfo.openId'>
             <div class="user-center">
               <div class="user-br">
-                <!-- <img :src="userinfo.avatarUrl" alt="" mode="aspectFill"> -->
-                <img src="http://p3.music.126.net/jxKCtRmDaA9YBPfOV8WUDw==/3389794349690837.jpg" alt="" mode="aspectFill">
+                <img :src="userinfo.avatarUrl" alt="" mode="aspectFill">
+                <!-- <img src="http://p3.music.126.net/jxKCtRmDaA9YBPfOV8WUDw==/3389794349690837.jpg" alt="" mode="aspectFill"> -->
               </div>
               <div class="user-info">
                 <div class="user-avatar">
-                  <img src="http://p3.music.126.net/jxKCtRmDaA9YBPfOV8WUDw==/3389794349690837.jpg" alt="" mode="aspectFill">
-                  <!-- <img :src="userinfo.avatarUrl" alt="" mode="aspectFill"> -->
+                  <!-- <img src="http://p3.music.126.net/jxKCtRmDaA9YBPfOV8WUDw==/3389794349690837.jpg" alt="" mode="aspectFill"> -->
+                  <img :src="userinfo.avatarUrl" alt="" mode="aspectFill">
                 </div>
                 <div class="user-name">{{userinfo.nickName}}</div>
               </div>
@@ -50,14 +51,19 @@
               <div class="user-share-album">
                 <p class="my-share">我的分享</p>
                 <!-- <div class="album-list"> -->
-                <div class="album-list" v-for="albumlist in albumlists" :key="albumlist.id">
-                  <div class="album-pic">
-                    <img src="http://p4.music.126.net/XLRy3oP88op7fwEtbpSueg==/6645448279354542.jpg" alt="" mode="aspectFill">
-                  </div>
-                  <div class="album-name">
-                    <p>{{albumlist.albumName}}</p>
-                    <p>{{albumlist.songNum}} 首</p>
-                  </div>
+                <div v-for="albumlist in albumlists" :key="albumlist.id">
+                  <a :href="playAlbumUrl + albumlist.id" hover-class="none">
+                    <div class="album-list">
+                      <div v-if="albumlist.pic" class="album-pic">
+                        <img :src="albumlist.pic" alt="" mode="aspectFill">
+                      </div>
+                      <div v-else class="no-album-pic"></div>
+                      <div class="album-name">
+                        <p>{{albumlist.albumName}}</p>
+                        <p>{{albumlist.songNum}} 首</p>
+                      </div>
+                    </div>
+                  </a>
                 </div>
               </div>
             </div>
@@ -92,16 +98,24 @@
         activeIndex: 0,
         tabs: ['首页', '我的'],
         windowHeight: 0,
-        baseItemHeight: 800,
+        baseItemHeight: 695,
         swiper_height: 0,
         loadTips: '上拉加载更多',
         albumlists: [],
-        listDatas:[],
+        indexalbums: [],
+        // listDatas:[],
         userinfo: {},
+        page: 0,
+        more: true,
         // config:{
         //   loginUrl: 'http://localhost:5858/musicSoul/login',
         //   userUrl: 'http://localhost:5858/musicSoul/user'
         // }
+      }
+    },
+    computed: {
+      playAlbumUrl() {
+        return '/pages/playalbum/main?id='
       }
     },
     methods: {
@@ -157,8 +171,12 @@
                 title: '登录成功',
                 icon: 'success'
               })
-              // this.setData({ userInfo: res, logged: true })
-              // util.showSuccess('登录成功')
+              this.getuseralbums();
+              // 从其他页面来的，登录成功跳回该页面
+              //跳回要刷新（未解决），要不然拿不到新的数据
+              //   wx.navigateBack({
+              // delta: 1
+              // })
             },
             fail: err => {
               console.error(err)
@@ -175,49 +193,98 @@
       },
 
 
-      async getalbums(){
-        const albumlists = await get('/musicSoul/albumlist',{
-          openId:this.userinfo.openId
+      async getuseralbums() {
+        const albumlists = await get('/musicSoul/albumlist', {
+          openId: this.userinfo.openId
         })
         this.albumlists = albumlists.list
+        console.log("albumlists:")
         console.log(albumlists.list)
       },
-      getData() {
-        let _item = {
-          img: 'http://p3.music.126.net/hC-YGyr2cC0E_K_4Vfkztg==/109951163095172063.jpg',
-          albumname: '那年追过的王力宏',
-          describe: '从童年时代起就听王力宏的歌，他给了我太多的回忆',
-          creator: 'jesses'
-        }
-        wx.showLoading();
-        this.loadTips = '加载中...';
-        setTimeout(() => {
-          for (var i = 0; i < 5; i++) {
-            this.listDatas.push(_item);
-            this.listDatas[i].id = i;
-          }
-          this.loadTips = '上拉加载更多';
-          this.autoHeight()
-          wx.hideLoading();
-        }, 1000)
 
+      async getindexalbums(init) {
+        if (init) {
+          this.page = 0
+          this.more = true
+        }
+        wx.showNavigationBarLoading()
+        const indexalbums = await get('/musicSoul/albumlist', {
+          page: this.page
+        })
+
+        if (indexalbums.list.length < 3 && this.page > 0) {
+          this.more = false
+          console.log(this.more)
+        }
+        if (init) {
+          this.indexalbums = indexalbums.list
+          this.autoHeight();
+          wx.stopPullDownRefresh()
+          console.log("this.indexalbums 11")
+          console.log(this.indexalbums)
+        } else {
+          // 下拉刷新，不能直接覆盖indexalbums 而是累加
+          this.indexalbums = this.indexalbums.concat(indexalbums.list)
+          this.autoHeight();
+          console.log("this.indexalbums 22")
+          console.log(this.indexalbums)
+        }
+
+        wx.hideNavigationBarLoading()
       },
+
+      // getData() {
+      //   let _item = {
+      //     img: 'http://p3.music.126.net/hC-YGyr2cC0E_K_4Vfkztg==/109951163095172063.jpg',
+      //     albumname: '那年追过的王力宏',
+      //     describe: '从童年时代起就听王力宏的歌，他给了我太多的回忆',
+      //     creator: 'jesses'
+      //   }
+      //   wx.showLoading();
+      //   this.loadTips = '加载中...';
+      //   setTimeout(() => {
+      //     for (var i = 0; i < 5; i++) {
+      //       this.listDatas.push(_item);
+      //       this.listDatas[i].id = i;
+      //     }
+      //     this.loadTips = '上拉加载更多';
+      //     this.autoHeight()
+      //     wx.hideLoading();
+      //   }, 1000)
+
+      // },
       autoHeight() {
-        let num = this.listDatas.length;
-        this.swiper_height = this.baseItemHeight * num + 100;
-        console.log(this.swiper_height);
+        if (this.indexalbums.length) {
+          let num = this.indexalbums.length;
+          this.swiper_height = this.baseItemHeight * num;
+          console.log(this.swiper_height);
+        } else {
+          this.swiper_height = 600;
+        }
+
       },
     },
     //   onPullDownRefresh () {
     //     this.getList(true)
     //     this.getTop()
     //   },
+    // onReachBottom() {
+    //   console.log("到底了");
+    //   this.getData();
+    // },
     onReachBottom() {
-      console.log("到底了");
-      this.getData();
+      if (!this.more) {
+        // 没有更多了
+        return false
+      }
+      this.page = this.page + 1
+      this.getindexalbums()
+    },
+    onPullDownRefresh() {
+      this.getindexalbums(true)
     },
     mounted() {
-      this.getData()
+      this.getindexalbums(true)
       // this.getList(true)
       // this.getTop()
       // let userinfo = wx.getStorageSync('userinfo')
@@ -230,9 +297,13 @@
       let userinfo = wx.getStorageSync('userinfo')
       if (userinfo) {
         this.userinfo = userinfo;
-        this.getalbums();
+        this.getuseralbums();
         console.log("缓存" + this.userinfo.openId)
       }
+    },
+    onLoad(option) {
+      console.log(option.activeIndex)
+      this.activeIndex = option.activeIndex;
     }
   }
 
@@ -304,7 +375,7 @@
     width: 650rpx;
     height: 300rpx;
     /* border-radius: 5px; */
-    filter: blur(1px);
+    filter: blur(1.5px);
   }
 
   .user-info .user-avatar {
@@ -345,7 +416,8 @@
     position: absolute;
     top: 290rpx;
     left: 15rpx;
-    height: 800rpx;
+    /* height: 800rpx; */
+    height: auto;
     width: 720rpx;
     margin: auto;
     /* border: 1px solid rgb(216, 210, 210); */
@@ -375,6 +447,13 @@
     border-bottom: none;
   }
 
+  .no-album-pic {
+    width: 50px;
+    height: 50px;
+    margin-right: 10px;
+    background-color: #ddf0ed;
+  }
+
   .album-pic,
   .album-pic img {
     width: 50px;
@@ -391,6 +470,12 @@
   .notLogin button {
     width: 200rpx;
     margin-top: 10px;
+  }
+
+  .text-footer {
+    text-align: center;
+    color: rgb(59, 66, 71);
+    margin-top: -10px;
   }
 
 </style>

@@ -38,5 +38,8 @@ router.post('/search',controllers.search)
 router.post('/songdetail',controllers.songdetail)
 router.post('/addalbum',controllers.addalbum)
 router.get('/albumlist',controllers.albumlist)
+router.post('/addsong',controllers.addsong)
+router.post('/addsong',controllers.addsong)
+router.get('/albumdetail',controllers.albumdetail)
 
 module.exports = router

@@ -9,7 +9,7 @@
       <div class="user-input">
         <form @submit="formSubmit" @reset="formReset">
           <p>
-            <input type="text" name="albumName" placeholder="输入专辑名">
+            <input type="text" name="albumName" placeholder="输入专辑名" >
           </p>
           <p>
             <textarea name="albumDes" placeholder="发表感想" />
@@ -43,7 +43,15 @@
       async formSubmit(e) {
         let userinfo = wx.getStorageSync('userinfo')
         console.log(e.mp.detail.value);
-        const res = await post('/musicSoul/addalbum', {
+        if(!e.mp.detail.value.albumName || !e.mp.detail.value.albumDes) {
+          wx.showModal({
+                  title:'不能为空',
+                  // content: e.mp.detail.errMsg,
+                  content: '请重试！',
+                  showCancel: false
+                })
+        } else {
+          const res = await post('/musicSoul/addalbum', {
           albumName: e.mp.detail.value.albumName,
           albumDes: e.mp.detail.value.albumDes,
           openId: userinfo.openId,
@@ -58,14 +66,16 @@
             title: '创建成功',
             icon: 'success'
             })
-        } else {
+        }else {
             wx.showModal({
-                  title:'创建失败',
+                  title:res.data.msg,
                   // content: e.mp.detail.errMsg,
                   content: '请重试！',
                   showCancel: false
                 })
         }
+        }
+        
         
         
       },
